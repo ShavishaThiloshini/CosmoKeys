@@ -29,9 +29,6 @@ const PianoPage = () => {
     initAudio();
   };
 
-  // Keyboard mapping for legend display
-  const octave3Keys = pianoNotes.filter(n => n.octave === 3).slice(0, 6);
-  const octave4Keys = pianoNotes.filter(n => n.octave === 4);
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center gap-6">

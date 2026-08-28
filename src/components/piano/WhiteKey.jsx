@@ -9,7 +9,6 @@ import React from 'react';
  *  onNoteOff   - handler called when a press ends
  */
 const WhiteKey = ({ note, isActive, onNoteOn, onNoteOff }) => {
-  // Prevent context menu on right-click / long press
   const handleContextMenu = (e) => e.preventDefault();
 
   return (
@@ -24,13 +23,13 @@ const WhiteKey = ({ note, isActive, onNoteOn, onNoteOff }) => {
       onTouchEnd={(e) => { e.preventDefault(); onNoteOff(note.midi); }}
       onContextMenu={handleContextMenu}
       className={[
-        // Base dimensions — height/width is set by parent Piano via CSS vars
+        // Fill the parent container fully
+        'w-full h-full',
         'relative flex flex-col justify-end items-center pb-2',
         'rounded-b-lg border border-white/20',
         'select-none cursor-pointer',
         'transition-all duration-75',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-nebula-violet',
-        // Default white-key styling
         isActive
           ? [
               'bg-gradient-to-b from-cosmic-blue/40 to-nebula-violet/30',
@@ -40,13 +39,13 @@ const WhiteKey = ({ note, isActive, onNoteOn, onNoteOff }) => {
             ].join(' ')
           : [
               'bg-gradient-to-b from-[#e8e0f5] to-[#c8bfe0]',
-              'hover:bg-gradient-to-b hover:from-[#ddd5f7] hover:to-[#b8afd8]',
+              'hover:from-[#ddd5f7] hover:to-[#b8afd8]',
               'hover:shadow-[0_0_8px_rgba(168,85,247,0.3)]',
               'shadow-[inset_0_-2px_3px_rgba(0,0,0,0.15)]',
             ].join(' '),
       ].join(' ')}
     >
-      {/* Note label at bottom of key */}
+      {/* Note label — only shown on C notes */}
       <span
         className={[
           'text-[10px] font-semibold tracking-wide leading-none',

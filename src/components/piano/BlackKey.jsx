@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * BlackKey — renders a single black piano key.
- * It is absolutely positioned over the white keys by the Piano container.
+ * Positioned by the parent Piano container's absolute-positioned wrapper div.
  * Props:
  *  note        - full note object from notes.js
  *  isActive    - boolean, whether this key is currently pressed
@@ -24,10 +24,8 @@ const BlackKey = ({ note, isActive, onNoteOn, onNoteOff }) => {
       onTouchEnd={(e) => { e.preventDefault(); onNoteOff(note.midi); }}
       onContextMenu={handleContextMenu}
       className={[
-        // Black keys sit on top of white keys (z-index handled by Piano)
-        'absolute top-0',
-        // Sizing — width/height managed by CSS vars set in Piano
-        'w-[var(--black-key-width)] h-[var(--black-key-height)]',
+        // Fill the wrapper div placed by Piano — do NOT self-position with 'absolute'
+        'block w-full h-full',
         'rounded-b-md',
         'select-none cursor-pointer',
         'transition-all duration-75',
@@ -41,7 +39,7 @@ const BlackKey = ({ note, isActive, onNoteOn, onNoteOff }) => {
           : [
               'bg-gradient-to-b from-[#1a0a2e] to-[#0d0518]',
               'border border-white/10',
-              'hover:bg-gradient-to-b hover:from-[#2a1045] hover:to-[#1a0a2e]',
+              'hover:from-[#2a1045] hover:to-[#1a0a2e]',
               'hover:shadow-[0_0_8px_rgba(124,58,237,0.5)]',
               'shadow-[inset_0_-2px_4px_rgba(0,0,0,0.6),0_2px_6px_rgba(0,0,0,0.5)]',
             ].join(' '),

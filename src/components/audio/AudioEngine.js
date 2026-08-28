@@ -124,13 +124,19 @@ class AudioEngine {
     const ctx = this.audioContext;
     const now = ctx.currentTime;
 
-    // Release — 300 ms natural fade
+    // Cancel any in-progress ADSR automation, then release.
+    // We use setTargetAtTime instead of exponentialRampToValueAtTime to avoid
+    // the "cannot ramp from 0" error when stopNote is called very quickly after
+    // playNote (before the attack ramp has raised gain above 0).
     gainNode.gain.cancelScheduledValues(now);
-    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    gainNode.gain.setValueAtTime(
+      Math.max(gainNode.gain.value, 0.001), // floor at 0.001 to avoid zero
+      now
+    );
+    gainNode.gain.setTargetAtTime(0.0001, now, 0.1); // smooth ~300 ms release
 
     oscs.forEach(({ osc }) => {
-      try { osc.stop(now + 0.31); } catch (_) { /* already stopped */ }
+      try { osc.stop(now + 0.35); } catch (_) { /* already stopped */ }
     });
 
     this.activeNodes.delete(midi);

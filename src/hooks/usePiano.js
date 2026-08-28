@@ -1,8 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { pianoNotes } from '../data/notes';
 
+/**
+ * usePiano — manages piano interaction state.
+ *
+ * Uses refs for the audio callbacks so keyboard handlers always have the
+ * latest versions without needing to be re-registered on every render.
+ * This avoids the stale-closure problem where keyboard input would fail to
+ * trigger audio after the audio context is lazily initialized.
+ */
 export const usePiano = (onPlayNote, onStopNote) => {
   const [activeNotes, setActiveNotes] = useState(new Set());
+
+  // Store callbacks in refs so keyboard listeners are never stale
+  const onPlayRef = useRef(onPlayNote);
+  const onStopRef = useRef(onStopNote);
+  useEffect(() => { onPlayRef.current = onPlayNote; }, [onPlayNote]);
+  useEffect(() => { onStopRef.current = onStopNote; }, [onStopNote]);
 
   const handleNoteOn = useCallback((midi) => {
     setActiveNotes((prev) => {
@@ -11,8 +25,8 @@ export const usePiano = (onPlayNote, onStopNote) => {
       next.add(midi);
       return next;
     });
-    if (onPlayNote) onPlayNote(midi);
-  }, [onPlayNote]);
+    if (onPlayRef.current) onPlayRef.current(midi);
+  }, []); // stable — reads from ref
 
   const handleNoteOff = useCallback((midi) => {
     setActiveNotes((prev) => {
@@ -20,11 +34,11 @@ export const usePiano = (onPlayNote, onStopNote) => {
       next.delete(midi);
       return next;
     });
-    if (onStopNote) onStopNote(midi);
-  }, [onStopNote]);
+    if (onStopRef.current) onStopRef.current(midi);
+  }, []); // stable — reads from ref
 
+  // Register keyboard listeners once — they use the stable handlers above
   useEffect(() => {
-    // Keyboard map: keyboardKey -> midi
     const keyMap = {};
     pianoNotes.forEach(note => {
       if (note.keyboardKey) {
@@ -33,24 +47,15 @@ export const usePiano = (onPlayNote, onStopNote) => {
     });
 
     const handleKeyDown = (e) => {
-      if (e.repeat) return; // Ignore auto-repeat when key is held down
-      
-      // Ignore if user is typing in an input
+      if (e.repeat) return; // ignore browser auto-repeat
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-      const key = e.key.toLowerCase();
-      const midi = keyMap[key];
-      if (midi !== undefined) {
-        handleNoteOn(midi);
-      }
+      const midi = keyMap[e.key.toLowerCase()];
+      if (midi !== undefined) handleNoteOn(midi);
     };
 
     const handleKeyUp = (e) => {
-      const key = e.key.toLowerCase();
-      const midi = keyMap[key];
-      if (midi !== undefined) {
-        handleNoteOff(midi);
-      }
+      const midi = keyMap[e.key.toLowerCase()];
+      if (midi !== undefined) handleNoteOff(midi);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -60,11 +65,7 @@ export const usePiano = (onPlayNote, onStopNote) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleNoteOn, handleNoteOff]);
+  }, [handleNoteOn, handleNoteOff]); // stable references — runs only once
 
-  return {
-    activeNotes,
-    handleNoteOn,
-    handleNoteOff,
-  };
+  return { activeNotes, handleNoteOn, handleNoteOff };
 };
