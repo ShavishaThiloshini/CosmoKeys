@@ -1,145 +1,105 @@
+import * as Tone from 'tone';
+
 /**
- * AudioEngine — Web Audio API–based piano synthesizer.
+ * AudioEngine — Tone.js based piano sampler.
  *
- * Sound design approach:
- *  - Three layered oscillators per note (fundamental + 2nd harmonic + detuned copy)
- *    to produce a richer, more organ/piano–like timbre instead of a plain triangle.
- *  - A per-note BiquadFilter that sweeps from bright → warm over ~80 ms, mimicking
- *    the natural brightness of a hammer strike followed by a mellow sustain.
- *  - Pitch-aware envelopes: high notes decay faster (like a real piano string).
- *  - Slight detuning between the three oscillators gives natural chorus/warmth.
+ * Uses high-quality Salamander Grand Piano samples.
  */
 class AudioEngine {
   constructor() {
-    this.audioContext = null;
-    this.masterGain = null;
-    this.activeNodes = new Map(); // midi → { oscs, gainNode, filter }
+    this.sampler = null;
+    this.isLoaded = false;
     this.globalVolume = 0.5;
   }
 
   // ─── Initialization ───────────────────────────────────────────────────────
 
   init() {
-    if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      this.masterGain = this.audioContext.createGain();
-      this.masterGain.connect(this.audioContext.destination);
-      this.masterGain.gain.setValueAtTime(this.globalVolume, this.audioContext.currentTime);
-    }
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+    if (this.sampler) return; // already initializing or initialized
+
+    // Map 0-1 linear volume to decibels for Tone.js
+    const initialDb = this.globalVolume === 0 ? -60 : 20 * Math.log10(this.globalVolume);
+
+    this.sampler = new Tone.Sampler({
+      urls: {
+        A0: "A0.mp3",
+        C1: "C1.mp3",
+        "D#1": "Ds1.mp3",
+        "F#1": "Fs1.mp3",
+        A1: "A1.mp3",
+        C2: "C2.mp3",
+        "D#2": "Ds2.mp3",
+        "F#2": "Fs2.mp3",
+        A2: "A2.mp3",
+        C3: "C3.mp3",
+        "D#3": "Ds3.mp3",
+        "F#3": "Fs3.mp3",
+        A3: "A3.mp3",
+        C4: "C4.mp3",
+        "D#4": "Ds4.mp3",
+        "F#4": "Fs4.mp3",
+        A4: "A4.mp3",
+        C5: "C5.mp3",
+        "D#5": "Ds5.mp3",
+        "F#5": "Fs5.mp3",
+        A5: "A5.mp3",
+        C6: "C6.mp3",
+        "D#6": "Ds6.mp3",
+        "F#6": "Fs6.mp3",
+        A6: "A6.mp3",
+        C7: "C7.mp3",
+        "D#7": "Ds7.mp3",
+        "F#7": "Fs7.mp3",
+        A7: "A7.mp3",
+        C8: "C8.mp3"
+      },
+      release: 1,
+      baseUrl: "https://tonejs.github.io/audio/salamander/",
+      onload: () => {
+        this.isLoaded = true;
+        console.log("Realistic Piano samples loaded successfully.");
+      }
+    }).toDestination();
+    
+    this.sampler.volume.value = initialDb;
+    
+    // Ensure context is resumed
+    if (Tone.context.state !== 'running') {
+      Tone.start();
     }
   }
 
   // ─── Utilities ────────────────────────────────────────────────────────────
 
-  /** Standard MIDI → Hz conversion. */
-  midiToFreq(midi) {
-    return 440 * Math.pow(2, (midi - 69) / 12);
-  }
-
-  /**
-   * Normalised pitch position 0–1 across the piano range (C3=48 to C5=72).
-   * Used to scale envelope timing and filter frequency per octave.
-   */
-  pitchNorm(midi) {
-    return Math.min(1, Math.max(0, (midi - 48) / 24));
-  }
-
   setVolume(volume) {
-    this.globalVolume = volume;
-    if (this.masterGain) {
-      this.masterGain.gain.setTargetAtTime(volume, this.audioContext.currentTime, 0.02);
+    this.globalVolume = Math.max(0, Math.min(1, volume));
+    if (this.sampler) {
+      // Convert linear [0, 1] volume to Decibels (approximate mapping)
+      // Range: -60dB (silence) to 0dB (max)
+      const db = this.globalVolume === 0 ? -100 : 20 * Math.log10(this.globalVolume);
+      this.sampler.volume.rampTo(db, 0.1);
     }
   }
 
   // ─── Playback ─────────────────────────────────────────────────────────────
 
   playNote(midi) {
-    if (!this.audioContext) return;
-    if (this.activeNodes.has(midi)) this.stopNote(midi);
+    if (!this.sampler || !this.isLoaded) return;
+    
+    // Web Audio requires user interaction to start. Tone.start() handles it.
+    if (Tone.context.state !== 'running') {
+      Tone.start();
+    }
 
-    const freq   = this.midiToFreq(midi);
-    const pnorm  = this.pitchNorm(midi);   // 0 = low C3, 1 = high C5
-    const ctx    = this.audioContext;
-    const now    = ctx.currentTime;
-
-    // ── Envelope timing (high notes decay faster, like a real piano string) ──
-    const attackTime  = 0.008;                            // short, sharp attack
-    const decayTime   = 0.06 + (1 - pnorm) * 0.12;      // 60–180 ms decay
-    const sustainGain = 0.18 + (1 - pnorm) * 0.12;      // louder sustain for bass
-
-    // ── Per-note lowpass filter (bright strike → warm sustain) ───────────────
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    // Start bright (3–6 kHz), sweep down to ~1–2 kHz over decayTime
-    const startCutoff = 3000 + pnorm * 3000;   // 3 kHz (bass) → 6 kHz (treble)
-    const endCutoff   = 800  + pnorm * 1200;   // 800 Hz (bass) → 2 kHz (treble)
-    filter.frequency.setValueAtTime(startCutoff, now);
-    filter.frequency.exponentialRampToValueAtTime(endCutoff, now + decayTime);
-    filter.Q.setValueAtTime(0.8, now);
-
-    // ── Per-note gain node (ADSR) ─────────────────────────────────────────────
-    const gainNode = ctx.createGain();
-    gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.9, now + attackTime);
-    gainNode.gain.exponentialRampToValueAtTime(sustainGain, now + attackTime + decayTime);
-
-    // ── Three oscillators for richness ────────────────────────────────────────
-    // 1. Fundamental — sawtooth for harmonic richness
-    // 2. Octave up (2nd harmonic) at lower gain — adds brightness
-    // 3. Slightly detuned copy of fundamental — natural chorus/warmth
-    const oscDefs = [
-      { type: 'sawtooth',  freqMult: 1,    gain: 0.45, detune: 0    },
-      { type: 'triangle',  freqMult: 2,    gain: 0.15, detune: 0    },  // 2nd harmonic
-      { type: 'sawtooth',  freqMult: 1,    gain: 0.30, detune: 6    },  // detuned copy (+6 cents)
-    ];
-
-    const oscs = oscDefs.map(def => {
-      const osc       = ctx.createOscillator();
-      const oscGain   = ctx.createGain();
-
-      osc.type        = def.type;
-      osc.frequency.setValueAtTime(freq * def.freqMult, now);
-      osc.detune.setValueAtTime(def.detune, now);
-      oscGain.gain.setValueAtTime(def.gain, now);
-
-      osc.connect(oscGain);
-      oscGain.connect(filter);
-
-      osc.start(now);
-      return { osc, oscGain };
-    });
-
-    filter.connect(gainNode);
-    gainNode.connect(this.masterGain);
-
-    this.activeNodes.set(midi, { oscs, gainNode, filter });
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+    this.sampler.triggerAttack(noteName);
   }
 
   stopNote(midi) {
-    if (!this.audioContext || !this.activeNodes.has(midi)) return;
-
-    const { oscs, gainNode } = this.activeNodes.get(midi);
-    const ctx = this.audioContext;
-    const now = ctx.currentTime;
-
-    // Cancel any in-progress ADSR automation, then release.
-    // We use setTargetAtTime instead of exponentialRampToValueAtTime to avoid
-    // the "cannot ramp from 0" error when stopNote is called very quickly after
-    // playNote (before the attack ramp has raised gain above 0).
-    gainNode.gain.cancelScheduledValues(now);
-    gainNode.gain.setValueAtTime(
-      Math.max(gainNode.gain.value, 0.001), // floor at 0.001 to avoid zero
-      now
-    );
-    gainNode.gain.setTargetAtTime(0.0001, now, 0.1); // smooth ~300 ms release
-
-    oscs.forEach(({ osc }) => {
-      try { osc.stop(now + 0.35); } catch (_) { /* already stopped */ }
-    });
-
-    this.activeNodes.delete(midi);
+    if (!this.sampler || !this.isLoaded) return;
+    
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+    this.sampler.triggerRelease(noteName);
   }
 }
 
