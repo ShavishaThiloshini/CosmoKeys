@@ -6,7 +6,7 @@ const HarmonyPage = () => {
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center">
       <PageHeader 
-        title="🎶 Harmony Studio" 
+        title={<span className="flex items-center justify-center gap-2"><span className="material-symbols-outlined text-4xl">library_music</span> Harmony Studio</span>} 
         description="Explore four-part SATB harmony and voice leading concepts."
       />
       

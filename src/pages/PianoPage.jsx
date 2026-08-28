@@ -33,7 +33,7 @@ const PianoPage = () => {
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center gap-6">
       <PageHeader
-        title="🎹 Virtual Piano"
+        title={<span className="flex items-center justify-center gap-2"><span className="material-symbols-outlined text-4xl">piano</span> Virtual Piano</span>}
         description="Play notes using your keyboard, mouse, or touch. Explore the cosmic soundscape."
       />
 
@@ -42,7 +42,7 @@ const PianoPage = () => {
         <div className="w-full max-w-5xl">
           <Panel className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 border-cosmic-purple/30">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🔇</span>
+              <span className="material-symbols-outlined text-2xl text-moon-gray">volume_off</span>
               <div>
                 <p className="text-star-white font-medium text-sm">Audio not started</p>
                 <p className="text-moon-gray text-xs">Click the button to enable sound playback.</p>
@@ -77,8 +77,8 @@ const PianoPage = () => {
 
             {/* Volume control */}
             <div className="flex items-center gap-3">
-              <span className="text-moon-gray text-sm select-none">
-                {volume === 0 ? '🔇' : volume < 0.4 ? '🔉' : '🔊'}
+              <span className="text-moon-gray text-xl select-none flex items-center">
+                {volume === 0 ? <span className="material-symbols-outlined">volume_off</span> : volume < 0.4 ? <span className="material-symbols-outlined">volume_down</span> : <span className="material-symbols-outlined">volume_up</span>}
               </span>
               <input
                 id="volume-slider"
@@ -127,7 +127,7 @@ const PianoPage = () => {
       <div className="w-full max-w-5xl">
         <Panel className="p-5">
           <h3 className="text-star-white font-semibold mb-4 text-sm tracking-wide uppercase flex items-center gap-2">
-            <span className="text-cosmic-purple">⌨</span> Keyboard Map
+            <span className="text-cosmic-purple material-symbols-outlined text-lg">keyboard</span> Keyboard Map
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Octave 3 */}

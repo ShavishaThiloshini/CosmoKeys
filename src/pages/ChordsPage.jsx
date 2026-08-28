@@ -6,7 +6,7 @@ const ChordsPage = () => {
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center">
       <PageHeader 
-        title="🎼 Chord Explorer" 
+        title={<span className="flex items-center justify-center gap-2"><span className="material-symbols-outlined text-4xl">music_note</span> Chord Explorer</span>} 
         description="Explore common piano chords, see their notes, and hear them play."
       />
       
