@@ -1,30 +1,170 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import PageHeader from '../components/common/PageHeader';
 import Panel from '../components/common/Panel';
+import Button from '../components/common/Button';
+import Piano from '../components/piano/Piano';
+import ChordSelector from '../components/chords/ChordSelector';
+import ChordInfo from '../components/chords/ChordInfo';
+import { commonChords } from '../data/chords';
+import { pianoNotes } from '../data/notes';
+import { useAudio } from '../hooks/useAudio';
 
 const ChordsPage = () => {
+  const [selectedChord, setSelectedChord] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  const { initAudio, isInitialized, playNote, stopNote, volume, setVolume } = useAudio();
+
+  // Convert note names (e.g. "C4") to MIDI values for highlighting
+  const highlightedNotes = useMemo(() => {
+    const midiSet = new Set();
+    if (selectedChord) {
+      selectedChord.notes.forEach(noteName => {
+        const note = pianoNotes.find(n => n.name.toLowerCase() === noteName.toLowerCase());
+        if (note) {
+          midiSet.add(note.midi);
+        }
+      });
+    }
+    return midiSet;
+  }, [selectedChord]);
+
+  const handleStartAudio = () => {
+    initAudio();
+  };
+
+  const handlePlayChord = () => {
+    if (!isInitialized) return;
+    
+    // Play all notes in the chord
+    highlightedNotes.forEach(midi => {
+      playNote(midi);
+    });
+    
+    setIsPlaying(true);
+    
+    // Stop playing after a brief duration (e.g. 1.5 seconds)
+    setTimeout(() => {
+      highlightedNotes.forEach(midi => {
+        stopNote(midi);
+      });
+      setIsPlaying(false);
+    }, 1500);
+  };
+
+  // Stop playing previous chord if selection changes while playing
+  useEffect(() => {
+    if (isPlaying) {
+      // It's safer to let them ring out or let the timeout handle it, 
+      // but to be clean we might want to stop currently playing notes.
+      // However, we don't keep track of the *previously* highlighted notes easily here without a ref.
+      // We will just let the timeout handle stopping them for simplicity.
+    }
+  }, [selectedChord]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (isPlaying) {
+        highlightedNotes.forEach(midi => stopNote(midi));
+      }
+    };
+  }, [highlightedNotes, isPlaying, stopNote]);
+
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center">
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center gap-6">
       <PageHeader 
         title={<span className="flex items-center justify-center gap-2"><span className="material-symbols-outlined text-4xl">music_note</span> Chord Explorer</span>} 
         description="Explore common piano chords, see their notes, and hear them play."
       />
       
-      <div className="w-full max-w-4xl mt-6">
-        <Panel className="flex flex-col items-center p-12 text-center border-dashed border-2 border-white/10 bg-transparent">
-          <p className="text-moon-gray mb-8">Chord system will be implemented on Day 3.</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-            <div className="h-32 bg-space-surface/50 rounded-xl flex items-center justify-center border border-white/5">
-              <span className="text-cosmic-blue font-medium tracking-wide">[ CHORD SELECTOR ]</span>
+      {/* Audio init banner */}
+      {!isInitialized && (
+        <div className="w-full max-w-5xl">
+          <Panel className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 border-cosmic-purple/30">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-2xl text-moon-gray">volume_off</span>
+              <div>
+                <p className="text-star-white font-medium text-sm">Audio not started</p>
+                <p className="text-moon-gray text-xs">Click the button to enable sound playback.</p>
+              </div>
             </div>
-            <div className="h-32 bg-space-surface/50 rounded-xl flex items-center justify-center border border-white/5">
-              <span className="text-cosmic-blue font-medium tracking-wide">[ CHORD INFO ]</span>
+            <Button variant="primary" onClick={handleStartAudio} id="start-audio-btn">
+              ▶ Start Audio Engine
+            </Button>
+          </Panel>
+        </div>
+      )}
+
+      <div className="w-full max-w-5xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          {/* Chord Selector */}
+          <div className="h-full">
+            <ChordSelector 
+              chords={commonChords} 
+              selectedChordId={selectedChord?.id} 
+              onSelectChord={setSelectedChord} 
+            />
+          </div>
+          
+          {/* Chord Info */}
+          <div className="h-full">
+            <ChordInfo 
+              chord={selectedChord} 
+              onPlayChord={handlePlayChord}
+              isPlaying={isPlaying}
+            />
+          </div>
+        </div>
+      </div>
+          
+      {/* Piano View */}
+      <div className="w-full max-w-5xl mt-2">
+        <Panel className="flex flex-col items-center gap-6 p-6 lg:p-8">
+          
+          {/* Controls header */}
+          <div className="flex items-center justify-end w-full">
+            {/* Volume control */}
+            <div className="flex items-center gap-3">
+              <span className="text-moon-gray text-xl select-none flex items-center">
+                {volume === 0 ? <span className="material-symbols-outlined">volume_off</span> : volume < 0.4 ? <span className="material-symbols-outlined">volume_down</span> : <span className="material-symbols-outlined">volume_up</span>}
+              </span>
+              <input
+                id="volume-slider"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                aria-label="Master volume"
+                className="w-28 h-1.5 accent-cosmic-purple cursor-pointer rounded-full appearance-none
+                           bg-white/10 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                           [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:appearance-none
+                           [&::-webkit-slider-thumb]:bg-nebula-violet [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(168,85,247,0.7)]"
+              />
+              <span className="text-moon-gray/60 text-xs w-8 tabular-nums">
+                {Math.round(volume * 100)}%
+              </span>
+            </div>
+          </div>
+
+          <div className="w-full overflow-x-auto pb-2 -mx-2 px-2">
+            <div className="flex justify-center" style={{ minWidth: 'max-content' }}>
+              <Piano 
+                activeNotes={new Set()} 
+                highlightedNotes={highlightedNotes} 
+                onNoteOn={() => {}} 
+                onNoteOff={() => {}} 
+              />
             </div>
           </div>
           
-          <div className="w-full h-32 mt-8 bg-space-surface/50 rounded-xl flex items-center justify-center border border-white/5">
-             <span className="text-moon-gray tracking-widest">[ SHARED PIANO ]</span>
+          {/* Octave labels */}
+          <div className="flex gap-2 text-xs text-moon-gray/50 select-none">
+            <span>◀ Octave 3</span>
+            <span>│</span>
+            <span>Octave 4 ▶</span>
           </div>
         </Panel>
       </div>
