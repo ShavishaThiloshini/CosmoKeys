@@ -20,7 +20,7 @@ const ChordsPage = () => {
   const [isAcmpPlaying, setIsAcmpPlaying] = useState(false);
   const acmpNotesRef = React.useRef(new Set());
   
-  const { initAudio, isInitialized, playNote, stopNote, playAcmp, stopAcmp, volume, setVolume } = useAudio();
+  const { initAudio, isInitialized, playNote, stopNote, playAcmp, stopAllAcmp, volume, setVolume } = useAudio();
   
   const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
     isInitialized ? playNote : null,
@@ -101,13 +101,17 @@ const ChordsPage = () => {
   }, [highlightedNotes, isPlaying, stopNote]);
 
   // Handle continuous ACMP playback
+  // Using stopAllAcmp() on stop/cleanup is the authoritative fix for the
+  // "sound still playing after Stop" bug. PolySynth.releaseAll() clears every
+  // active voice in one call, preventing orphaned voices that per-note
+  // triggerRelease can leave behind when tracking goes out of sync.
   useEffect(() => {
     if (isAcmpPlaying && selectedChord && isInitialized && setupMode === 'acmp') {
       const pattern = accompanimentPatterns[selectedChord.id];
       if (!pattern) return;
       
-      // Stop previous acmp notes
-      acmpNotesRef.current.forEach(midi => stopAcmp(midi));
+      // First stop any currently playing ACMP notes (chord change while active)
+      stopAllAcmp();
       acmpNotesRef.current.clear();
       
       const notesToPlay = [...pattern.bass, ...pattern.chord];
@@ -121,15 +125,17 @@ const ChordsPage = () => {
       });
       
     } else {
-      acmpNotesRef.current.forEach(midi => stopAcmp(midi));
+      // Stop is requested — call releaseAll for guaranteed full audio stop
+      stopAllAcmp();
       acmpNotesRef.current.clear();
     }
     
     return () => {
-      acmpNotesRef.current.forEach(midi => stopAcmp(midi));
+      // Cleanup: always stop all ACMP audio when effect re-runs or unmounts
+      stopAllAcmp();
       acmpNotesRef.current.clear();
     };
-  }, [isAcmpPlaying, selectedChord, isInitialized, setupMode, playAcmp, stopAcmp]);
+  }, [isAcmpPlaying, selectedChord, isInitialized, setupMode, playAcmp, stopAllAcmp]);
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center gap-6">

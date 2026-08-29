@@ -139,6 +139,17 @@ class AudioEngine {
     const noteName = Tone.Frequency(midi, "midi").toNote();
     this.acmpSynth.triggerRelease(noteName);
   }
+
+  /**
+   * Immediately releases ALL active ACMP voices.
+   * Fixes the "sound still playing after Stop" bug — triggerRelease on a per-note
+   * basis can leave orphaned PolySynth voices if note tracking gets out of sync.
+   * releaseAll() is the authoritative way to stop every voice at once.
+   */
+  stopAllAcmp() {
+    if (!this.acmpSynth) return;
+    this.acmpSynth.releaseAll();
+  }
 }
 
 // Singleton instance shared across the application

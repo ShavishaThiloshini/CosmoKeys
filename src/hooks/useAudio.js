@@ -41,6 +41,12 @@ export const useAudio = () => {
     }
   }, [isInitialized]);
 
+  const stopAllAcmp = useCallback(() => {
+    if (isInitialized) {
+      engine.stopAllAcmp();
+    }
+  }, [isInitialized]);
+
   return {
     initAudio,
     isInitialized,
@@ -48,6 +54,7 @@ export const useAudio = () => {
     stopNote,
     playAcmp,
     stopAcmp,
+    stopAllAcmp,
     volume,
     setVolume
   };
