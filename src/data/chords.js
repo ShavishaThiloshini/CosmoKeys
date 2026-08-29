@@ -49,6 +49,41 @@ export const commonChords = [
     type: "major",
     notes: ["B3", "D#4", "F#4"]
   },
+  {
+    id: "cs-major",
+    name: "C# Major",
+    symbol: "C#",
+    type: "major",
+    notes: ["C#4", "F4", "G#4"]
+  },
+  {
+    id: "ds-major",
+    name: "D# Major",
+    symbol: "D#",
+    type: "major",
+    notes: ["D#4", "G4", "A#4"]
+  },
+  {
+    id: "fs-major",
+    name: "F# Major",
+    symbol: "F#",
+    type: "major",
+    notes: ["F#3", "A#3", "C#4"]
+  },
+  {
+    id: "gs-major",
+    name: "G# Major",
+    symbol: "G#",
+    type: "major",
+    notes: ["G#3", "C4", "D#4"]
+  },
+  {
+    id: "as-major",
+    name: "A# Major",
+    symbol: "A#",
+    type: "major",
+    notes: ["A#3", "D4", "F4"]
+  },
 
   // Minor Chords
   {
@@ -99,5 +134,40 @@ export const commonChords = [
     symbol: "Bm",
     type: "minor",
     notes: ["B3", "D4", "F#4"]
+  },
+  {
+    id: "cs-minor",
+    name: "C# Minor",
+    symbol: "C#m",
+    type: "minor",
+    notes: ["C#4", "E4", "G#4"]
+  },
+  {
+    id: "ds-minor",
+    name: "D# Minor",
+    symbol: "D#m",
+    type: "minor",
+    notes: ["D#4", "F#4", "A#4"]
+  },
+  {
+    id: "fs-minor",
+    name: "F# Minor",
+    symbol: "F#m",
+    type: "minor",
+    notes: ["F#3", "A3", "C#4"]
+  },
+  {
+    id: "gs-minor",
+    name: "G# Minor",
+    symbol: "G#m",
+    type: "minor",
+    notes: ["G#3", "B3", "D#4"]
+  },
+  {
+    id: "as-minor",
+    name: "A# Minor",
+    symbol: "A#m",
+    type: "minor",
+    notes: ["A#3", "C#4", "F4"]
   }
 ];

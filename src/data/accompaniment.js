@@ -6,6 +6,11 @@ export const accompanimentPatterns = {
   "g-major": { bass: ["G2", "D3"], chord: ["G3", "B3", "D4"] },
   "a-major": { bass: ["A2", "E3"], chord: ["A3", "C#4", "E4"] },
   "b-major": { bass: ["B2", "F#3"], chord: ["B3", "D#4", "F#4"] },
+  "cs-major": { bass: ["C#3", "G#3"], chord: ["C#4", "F4", "G#4"] },
+  "ds-major": { bass: ["D#3", "A#3"], chord: ["D#4", "G4", "A#4"] },
+  "fs-major": { bass: ["F#3", "C#3"], chord: ["F#3", "A#3", "C#4"] },
+  "gs-major": { bass: ["G#3", "D#3"], chord: ["G#3", "C4", "D#4"] },
+  "as-major": { bass: ["A#3", "F3"], chord: ["A#3", "D4", "F4"] },
   
   "c-minor": { bass: ["C3", "G3"], chord: ["C4", "D#4", "G4"] },
   "d-minor": { bass: ["D3", "A3"], chord: ["D4", "F4", "A4"] },
@@ -13,5 +18,10 @@ export const accompanimentPatterns = {
   "f-minor": { bass: ["F2", "C3"], chord: ["F3", "G#3", "C4"] },
   "g-minor": { bass: ["G2", "D3"], chord: ["G3", "A#3", "D4"] },
   "a-minor": { bass: ["A2", "E3"], chord: ["A3", "C4", "E4"] },
-  "b-minor": { bass: ["B2", "F#3"], chord: ["B3", "D4", "F#4"] }
+  "b-minor": { bass: ["B2", "F#3"], chord: ["B3", "D4", "F#4"] },
+  "cs-minor": { bass: ["C#3", "G#3"], chord: ["C#4", "E4", "G#4"] },
+  "ds-minor": { bass: ["D#3", "A#3"], chord: ["D#4", "F#4", "A#4"] },
+  "fs-minor": { bass: ["F#3", "C#3"], chord: ["F#3", "A3", "C#4"] },
+  "gs-minor": { bass: ["G#3", "D#3"], chord: ["G#3", "B3", "D#4"] },
+  "as-minor": { bass: ["A#3", "F3"], chord: ["A#3", "C#4", "F4"] }
 };
