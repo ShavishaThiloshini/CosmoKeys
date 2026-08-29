@@ -13,6 +13,7 @@ import { usePiano } from '../hooks/usePiano';
 const ChordsPage = () => {
   const [selectedChord, setSelectedChord] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
   
   const { initAudio, isInitialized, playNote, stopNote, volume, setVolume } = useAudio();
   
@@ -37,6 +38,11 @@ const ChordsPage = () => {
 
   const handleStartAudio = () => {
     initAudio();
+  };
+
+  const toggleLoop = () => {
+    if (!isInitialized) initAudio();
+    setIsLooping(prev => !prev);
   };
 
   const handlePlayChord = () => {
@@ -67,6 +73,26 @@ const ChordsPage = () => {
       // We will just let the timeout handle stopping them for simplicity.
     }
   }, [selectedChord]);
+
+  // Handle continuous looping playback
+  useEffect(() => {
+    let intervalId;
+    
+    if (isLooping && selectedChord && isInitialized) {
+      // Play immediately when starting loop or changing chord
+      handlePlayChord();
+      
+      intervalId = setInterval(() => {
+        handlePlayChord();
+      }, 2000); // Play every 2 seconds
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isLooping, selectedChord, isInitialized]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -119,6 +145,8 @@ const ChordsPage = () => {
               chord={selectedChord} 
               onPlayChord={handlePlayChord}
               isPlaying={isPlaying}
+              isLooping={isLooping}
+              onToggleLoop={toggleLoop}
             />
           </div>
         </div>
