@@ -8,12 +8,18 @@ import ChordInfo from '../components/chords/ChordInfo';
 import { commonChords } from '../data/chords';
 import { pianoNotes } from '../data/notes';
 import { useAudio } from '../hooks/useAudio';
+import { usePiano } from '../hooks/usePiano';
 
 const ChordsPage = () => {
   const [selectedChord, setSelectedChord] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   
   const { initAudio, isInitialized, playNote, stopNote, volume, setVolume } = useAudio();
+  
+  const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
+    isInitialized ? playNote : null,
+    isInitialized ? stopNote : null
+  );
 
   // Convert note names (e.g. "C4") to MIDI values for highlighting
   const highlightedNotes = useMemo(() => {
@@ -152,10 +158,10 @@ const ChordsPage = () => {
           <div className="w-full overflow-x-auto pb-2 -mx-2 px-2">
             <div className="flex justify-center" style={{ minWidth: 'max-content' }}>
               <Piano 
-                activeNotes={new Set()} 
+                activeNotes={activeNotes} 
                 highlightedNotes={highlightedNotes} 
-                onNoteOn={() => {}} 
-                onNoteOff={() => {}} 
+                onNoteOn={handleNoteOn} 
+                onNoteOff={handleNoteOff} 
               />
             </div>
           </div>
