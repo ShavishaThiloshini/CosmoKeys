@@ -15,22 +15,14 @@ const AcmpInfo = ({ chord, acmpPattern, isAcmpPlaying, onToggleAcmp }) => {
             {chord.name} ACMP
           </h2>
           <p className="text-moon-gray font-medium text-lg mb-6">
-            Basic Accompaniment Pattern
+            Sustained Harmonic Pad
           </p>
           
-          <div className="bg-space-surface/80 rounded-xl py-3 px-6 border border-white/5 mb-8 w-full max-w-xs text-left">
-            <div className="mb-3">
-              <p className="text-moon-gray/60 text-xs uppercase tracking-widest mb-1">Bass Notes</p>
-              <p className="text-cosmic-purple font-semibold tracking-widest">
-                {acmpPattern.bass.join(' • ')}
-              </p>
-            </div>
-            <div>
-              <p className="text-moon-gray/60 text-xs uppercase tracking-widest mb-1">Chord Notes</p>
-              <p className="text-cosmic-blue font-semibold tracking-widest">
-                {acmpPattern.chord.join(' • ')}
-              </p>
-            </div>
+          <div className="bg-space-surface/80 rounded-xl py-3 px-6 border border-white/5 mb-8 w-full max-w-xs text-center">
+            <p className="text-moon-gray/60 text-xs uppercase tracking-widest mb-2">Sustained Notes</p>
+            <p className="text-cosmic-blue font-semibold tracking-widest text-lg">
+              {[...acmpPattern.bass, ...acmpPattern.chord].join(' • ')}
+            </p>
           </div>
           
           <Button 

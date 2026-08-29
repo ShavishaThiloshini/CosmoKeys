@@ -29,11 +29,25 @@ export const useAudio = () => {
     }
   }, [isInitialized]);
 
+  const playAcmp = useCallback((midi) => {
+    if (isInitialized) {
+      engine.playAcmp(midi);
+    }
+  }, [isInitialized]);
+
+  const stopAcmp = useCallback((midi) => {
+    if (isInitialized) {
+      engine.stopAcmp(midi);
+    }
+  }, [isInitialized]);
+
   return {
     initAudio,
     isInitialized,
     playNote,
     stopNote,
+    playAcmp,
+    stopAcmp,
     volume,
     setVolume
   };

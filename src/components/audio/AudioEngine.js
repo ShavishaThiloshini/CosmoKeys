@@ -8,6 +8,7 @@ import * as Tone from 'tone';
 class AudioEngine {
   constructor() {
     this.sampler = null;
+    this.acmpSynth = null;
     this.isLoaded = false;
     this.globalVolume = 0.5;
   }
@@ -63,6 +64,22 @@ class AudioEngine {
     
     this.sampler.volume.value = initialDb;
     
+    // Setup ACMP Synth (Soft Pad)
+    this.acmpSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: "triangle8" // Warm pad sound
+      },
+      envelope: {
+        attack: 1.5,
+        decay: 0.2,
+        sustain: 1.0,
+        release: 3.0
+      }
+    }).toDestination();
+    
+    // Set acmpSynth volume lower so it sits in the background
+    this.acmpSynth.volume.value = initialDb - 8;
+    
     // Ensure context is resumed
     if (Tone.context.state !== 'running') {
       Tone.start();
@@ -78,6 +95,9 @@ class AudioEngine {
       // Range: -60dB (silence) to 0dB (max)
       const db = this.globalVolume === 0 ? -100 : 20 * Math.log10(this.globalVolume);
       this.sampler.volume.rampTo(db, 0.1);
+      if (this.acmpSynth) {
+        this.acmpSynth.volume.rampTo(db - 8, 0.1);
+      }
     }
   }
 
@@ -100,6 +120,24 @@ class AudioEngine {
     
     const noteName = Tone.Frequency(midi, "midi").toNote();
     this.sampler.triggerRelease(noteName);
+  }
+
+  playAcmp(midi) {
+    if (!this.acmpSynth) return;
+    
+    if (Tone.context.state !== 'running') {
+      Tone.start();
+    }
+
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+    this.acmpSynth.triggerAttack(noteName);
+  }
+
+  stopAcmp(midi) {
+    if (!this.acmpSynth) return;
+    
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+    this.acmpSynth.triggerRelease(noteName);
   }
 }
 

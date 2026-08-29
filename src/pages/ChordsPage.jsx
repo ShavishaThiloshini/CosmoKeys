@@ -20,10 +20,9 @@ const ChordsPage = () => {
   
   const [setupMode, setSetupMode] = useState('chords'); // 'chords' | 'acmp'
   const [isAcmpPlaying, setIsAcmpPlaying] = useState(false);
-  const [acmpStep, setAcmpStep] = useState(0);
   const acmpNotesRef = React.useRef(new Set());
   
-  const { initAudio, isInitialized, playNote, stopNote, volume, setVolume } = useAudio();
+  const { initAudio, isInitialized, playNote, stopNote, playAcmp, stopAcmp, volume, setVolume } = useAudio();
   
   const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
     isInitialized ? playNote : null,
@@ -37,16 +36,8 @@ const ChordsPage = () => {
     if (setupMode === 'acmp' && isAcmpPlaying && selectedChord) {
       const pattern = accompanimentPatterns[selectedChord.id];
       if (pattern) {
-        let notesToHighlight = [];
-        if (acmpStep === 0) {
-          notesToHighlight = [pattern.bass[0]];
-        } else if (acmpStep === 1 || acmpStep === 3) {
-          notesToHighlight = [...pattern.chord];
-        } else if (acmpStep === 2) {
-          notesToHighlight = [pattern.bass[1] || pattern.bass[0]];
-        }
-        
-        notesToHighlight.forEach(noteName => {
+        // Highlight all notes in the ACMP pattern
+        [...pattern.bass, ...pattern.chord].forEach(noteName => {
           const note = pianoNotes.find(n => n.name.toLowerCase() === noteName.toLowerCase());
           if (note) {
             midiSet.add(note.midi);
@@ -62,7 +53,7 @@ const ChordsPage = () => {
       });
     }
     return midiSet;
-  }, [selectedChord, setupMode, isAcmpPlaying, acmpStep]);
+  }, [selectedChord, setupMode, isAcmpPlaying]);
 
   const handleStartAudio = () => {
     initAudio();
@@ -150,57 +141,34 @@ const ChordsPage = () => {
 
   // Handle continuous ACMP playback
   useEffect(() => {
-    let intervalId;
-    
     if (isAcmpPlaying && selectedChord && isInitialized && setupMode === 'acmp') {
       const pattern = accompanimentPatterns[selectedChord.id];
       if (!pattern) return;
       
-      const playStep = (step) => {
-        // Stop previous acmp notes
-        acmpNotesRef.current.forEach(midi => stopNote(midi));
-        acmpNotesRef.current.clear();
-        
-        let notesToPlay = [];
-        if (step === 0) {
-          notesToPlay = [pattern.bass[0]];
-        } else if (step === 1 || step === 3) {
-          notesToPlay = [...pattern.chord];
-        } else if (step === 2) {
-          notesToPlay = [pattern.bass[1] || pattern.bass[0]];
+      // Stop previous acmp notes
+      acmpNotesRef.current.forEach(midi => stopAcmp(midi));
+      acmpNotesRef.current.clear();
+      
+      const notesToPlay = [...pattern.bass, ...pattern.chord];
+      
+      notesToPlay.forEach(noteName => {
+        const note = pianoNotes.find(n => n.name.toLowerCase() === noteName.toLowerCase());
+        if (note) {
+          playAcmp(note.midi);
+          acmpNotesRef.current.add(note.midi);
         }
-        
-        notesToPlay.forEach(noteName => {
-          const note = pianoNotes.find(n => n.name.toLowerCase() === noteName.toLowerCase());
-          if (note) {
-            playNote(note.midi);
-            acmpNotesRef.current.add(note.midi);
-          }
-        });
-      };
-      
-      let currentStep = 0;
-      setAcmpStep(currentStep);
-      playStep(currentStep);
-      
-      intervalId = setInterval(() => {
-        currentStep = (currentStep + 1) % 4;
-        setAcmpStep(currentStep);
-        playStep(currentStep);
-      }, 500); // 500ms per step
+      });
       
     } else {
-      acmpNotesRef.current.forEach(midi => stopNote(midi));
+      acmpNotesRef.current.forEach(midi => stopAcmp(midi));
       acmpNotesRef.current.clear();
-      setAcmpStep(0);
     }
     
     return () => {
-      if (intervalId) clearInterval(intervalId);
-      acmpNotesRef.current.forEach(midi => stopNote(midi));
+      acmpNotesRef.current.forEach(midi => stopAcmp(midi));
       acmpNotesRef.current.clear();
     };
-  }, [isAcmpPlaying, selectedChord, isInitialized, setupMode]);
+  }, [isAcmpPlaying, selectedChord, isInitialized, setupMode, playAcmp, stopAcmp]);
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center gap-6">
