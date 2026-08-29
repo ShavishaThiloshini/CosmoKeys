@@ -15,8 +15,6 @@ import { usePiano } from '../hooks/usePiano';
 const ChordsPage = () => {
   const [selectedChord, setSelectedChord] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isSustaining, setIsSustaining] = useState(false);
-  const sustainedNotesRef = React.useRef(new Set());
   
   const [setupMode, setSetupMode] = useState('chords'); // 'chords' | 'acmp'
   const [isAcmpPlaying, setIsAcmpPlaying] = useState(false);
@@ -59,11 +57,6 @@ const ChordsPage = () => {
     initAudio();
   };
 
-  const toggleSustain = () => {
-    if (!isInitialized) initAudio();
-    setIsSustaining(prev => !prev);
-  };
-
   const toggleAcmp = () => {
     if (!isInitialized) initAudio();
     setIsAcmpPlaying(prev => !prev);
@@ -79,15 +72,13 @@ const ChordsPage = () => {
     
     setIsPlaying(true);
     
-    // If sustaining, don't stop the notes here (let the useEffect handle it)
-    if (!isSustaining) {
-      setTimeout(() => {
-        highlightedNotes.forEach(midi => {
-          stopNote(midi);
-        });
-        setIsPlaying(false);
-      }, 1500);
-    }
+    // Stop playing after a brief duration (e.g. 1.5 seconds)
+    setTimeout(() => {
+      highlightedNotes.forEach(midi => {
+        stopNote(midi);
+      });
+      setIsPlaying(false);
+    }, 1500);
   };
 
   // Stop playing previous chord if selection changes while playing
@@ -100,44 +91,14 @@ const ChordsPage = () => {
     }
   }, [selectedChord]);
 
-  // Handle continuous sustain playback
-  useEffect(() => {
-    if (isSustaining && isInitialized) {
-      // First, stop any previously sustained notes
-      sustainedNotesRef.current.forEach(midi => stopNote(midi));
-      sustainedNotesRef.current.clear();
-
-      if (selectedChord) {
-        // Play and record new sustained notes
-        highlightedNotes.forEach(midi => {
-          playNote(midi);
-          sustainedNotesRef.current.add(midi);
-        });
-        setIsPlaying(true);
-      }
-    } else {
-      // If we turn off sustain, stop currently sustained notes
-      sustainedNotesRef.current.forEach(midi => stopNote(midi));
-      sustainedNotesRef.current.clear();
-      // Only set isPlaying to false if we are not in the middle of a one-shot play
-      // Actually, it's safer to just let the timeout handle normal play, but we can reset here.
-    }
-    
-    return () => {
-      // On unmount or when dependencies change, clean up sustained notes
-      sustainedNotesRef.current.forEach(midi => stopNote(midi));
-      sustainedNotesRef.current.clear();
-    };
-  }, [isSustaining, selectedChord, isInitialized, highlightedNotes, playNote, stopNote]);
-
   // Clean up on unmount for one-shot plays
   useEffect(() => {
     return () => {
-      if (isPlaying && !isSustaining) {
+      if (isPlaying) {
         highlightedNotes.forEach(midi => stopNote(midi));
       }
     };
-  }, [highlightedNotes, isPlaying, isSustaining, stopNote]);
+  }, [highlightedNotes, isPlaying, stopNote]);
 
   // Handle continuous ACMP playback
   useEffect(() => {
@@ -199,7 +160,7 @@ const ChordsPage = () => {
       <div className="w-full max-w-5xl flex justify-center mb-2">
         <div className="bg-space-surface/60 p-1 rounded-xl border border-white/5 flex gap-1">
           <button
-            onClick={() => { setSetupMode('chords'); setIsAcmpPlaying(false); setIsSustaining(false); }}
+            onClick={() => { setSetupMode('chords'); setIsAcmpPlaying(false); }}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
               setupMode === 'chords' 
                 ? 'bg-cosmic-purple text-white shadow-lg' 
@@ -209,7 +170,7 @@ const ChordsPage = () => {
             Chords
           </button>
           <button
-            onClick={() => { setSetupMode('acmp'); setIsAcmpPlaying(false); setIsSustaining(false); }}
+            onClick={() => { setSetupMode('acmp'); setIsAcmpPlaying(false); }}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
               setupMode === 'acmp' 
                 ? 'bg-cosmic-blue text-white shadow-lg' 
@@ -239,8 +200,6 @@ const ChordsPage = () => {
                 chord={selectedChord} 
                 onPlayChord={handlePlayChord}
                 isPlaying={isPlaying}
-                isSustaining={isSustaining}
-                onToggleSustain={toggleSustain}
               />
             ) : (
               <AcmpInfo 

@@ -2,7 +2,7 @@ import React from 'react';
 import Panel from '../common/Panel';
 import Button from '../common/Button';
 
-const ChordInfo = ({ chord, onPlayChord, isPlaying, isSustaining, onToggleSustain }) => {
+const ChordInfo = ({ chord, onPlayChord, isPlaying }) => {
   return (
     <Panel className="p-6 h-full flex flex-col items-center justify-center text-center">
       {chord ? (
@@ -25,26 +25,14 @@ const ChordInfo = ({ chord, onPlayChord, isPlaying, isSustaining, onToggleSustai
             </p>
           </div>
           
-          <div className="flex w-full max-w-xs gap-3">
-            <Button 
-              variant="primary" 
-              onClick={onPlayChord} 
-              className={`flex-1 flex items-center justify-center gap-2 py-3 ${isPlaying && !isSustaining ? 'animate-pulse' : ''}`}
-            >
-              <span className="material-symbols-outlined">play_circle</span>
-              Play Once
-            </Button>
-            
-            <Button 
-              variant={isSustaining ? 'primary' : 'secondary'} 
-              onClick={onToggleSustain} 
-              className={`flex-1 flex items-center justify-center gap-2 py-3 ${isSustaining ? 'bg-nebula-violet hover:bg-cosmic-purple animate-pulse' : 'border-moon-gray/20 hover:border-moon-gray/40'}`}
-              title={isSustaining ? "Stop sustain play" : "Start sustain play"}
-            >
-              <span className="material-symbols-outlined">{isSustaining ? 'stop_circle' : 'all_inclusive'}</span>
-              {isSustaining ? 'Stop' : 'Sustain'}
-            </Button>
-          </div>
+          <Button 
+            variant="primary" 
+            onClick={onPlayChord} 
+            className={`w-full max-w-xs flex items-center justify-center gap-2 py-3 ${isPlaying ? 'animate-pulse' : ''}`}
+          >
+            <span className="material-symbols-outlined">play_circle</span>
+            Play Chord
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col items-center text-moon-gray/50 py-12">
