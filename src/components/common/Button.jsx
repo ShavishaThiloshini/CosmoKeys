@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Button = ({ children, variant = 'primary', onClick, className = '' }) => {
+const Button = ({ children, variant = 'primary', onClick, disabled = false, className = '' }) => {
   const baseClasses = "px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2";
   
   const variants = {
@@ -9,10 +9,13 @@ const Button = ({ children, variant = 'primary', onClick, className = '' }) => {
     ghost: "text-moon-gray hover:text-star-white hover:bg-white/5"
   };
 
+  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "";
+
   return (
     <button 
       onClick={onClick}
-      className={`${baseClasses} ${variants[variant]} ${className}`}
+      disabled={disabled}
+      className={`${baseClasses} ${variants[variant]} ${disabledClasses} ${className}`}
     >
       {children}
     </button>
