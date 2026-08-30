@@ -65,6 +65,24 @@ export const useAudio = () => {
     }
   }, [isInitialized]);
 
+  const playHarmonyString = useCallback((midi) => {
+    if (isInitialized) {
+      engine.playHarmonyString(midi);
+    }
+  }, [isInitialized]);
+
+  const stopHarmonyString = useCallback((midi) => {
+    if (isInitialized) {
+      engine.stopHarmonyString(midi);
+    }
+  }, [isInitialized]);
+
+  const stopAllHarmonyStrings = useCallback(() => {
+    if (isInitialized) {
+      engine.stopAllHarmonyStrings();
+    }
+  }, [isInitialized]);
+
   return {
     initAudio,
     isInitialized,
@@ -76,6 +94,9 @@ export const useAudio = () => {
     playHarmonyNote,
     stopHarmonyNote,
     stopAllHarmony,
+    playHarmonyString,
+    stopHarmonyString,
+    stopAllHarmonyStrings,
     volume,
     setVolume
   };

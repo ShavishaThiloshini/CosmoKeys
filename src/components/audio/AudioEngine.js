@@ -11,6 +11,7 @@ class AudioEngine {
     this.acmpSynth = null;
     this.harmonyStringSynth = null;
     this.harmonyChoirSynth = null;
+    this.sustainedHarmonySynth = null;
     this.isLoaded = false;
     this.globalVolume = 0.5;
   }
@@ -112,6 +113,21 @@ class AudioEngine {
     
     this.harmonyChoirSynth.volume.value = initialDb - 5;
     
+    // Setup Sustained Harmony Synth (for Strings mode - like ACMP but for SATB)
+    this.sustainedHarmonySynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: "triangle8" // Warm, sustained pad sound
+      },
+      envelope: {
+        attack: 1.2,
+        decay: 0.2,
+        sustain: 1.0,
+        release: 2.5
+      }
+    }).toDestination();
+    
+    this.sustainedHarmonySynth.volume.value = initialDb - 6;
+    
     // Ensure context is resumed
     if (Tone.context.state !== 'running') {
       Tone.start();
@@ -135,6 +151,9 @@ class AudioEngine {
       }
       if (this.harmonyChoirSynth) {
         this.harmonyChoirSynth.volume.rampTo(db - 5, 0.1);
+      }
+      if (this.sustainedHarmonySynth) {
+        this.sustainedHarmonySynth.volume.rampTo(db - 6, 0.1);
       }
     }
   }
@@ -246,6 +265,43 @@ class AudioEngine {
     }
     // Note: piano sampler doesn't have releaseAll, so we don't call it
     // Individual notes will release naturally through triggerRelease
+  }
+
+  // ─── Sustained Harmony String Playback (Strings mode) ─────────────────────
+
+  /**
+   * Play a sustained harmony string note.
+   * Similar to playAcmp but for the four-part SATB harmony.
+   */
+  playHarmonyString(midi) {
+    if (!this.sustainedHarmonySynth) return;
+    
+    if (Tone.context.state !== 'running') {
+      Tone.start();
+    }
+
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+    this.sustainedHarmonySynth.triggerAttack(noteName);
+  }
+
+  /**
+   * Stop a sustained harmony string note.
+   * Similar to stopAcmp but for the four-part SATB harmony.
+   */
+  stopHarmonyString(midi) {
+    if (!this.sustainedHarmonySynth) return;
+    
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+    this.sustainedHarmonySynth.triggerRelease(noteName);
+  }
+
+  /**
+   * Stop all active sustained harmony string notes.
+   * Immediately releases all voices, preventing audio from getting stuck.
+   */
+  stopAllHarmonyStrings() {
+    if (!this.sustainedHarmonySynth) return;
+    this.sustainedHarmonySynth.releaseAll();
   }
 }
 

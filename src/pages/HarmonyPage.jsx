@@ -18,9 +18,12 @@ const HarmonyPage = () => {
   const [harmony, setHarmony] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedTone, setSelectedTone] = useState('piano');
+  const [setupMode, setSetupMode] = useState('harmony'); // 'harmony' | 'strings'
+  const [isStringsActive, setIsStringsActive] = useState(false);
   const harmonyNotesRef = React.useRef(new Set());
+  const sustainedStringNotesRef = React.useRef(new Set());
   
-  const { initAudio, isInitialized, playNote, stopNote, playHarmonyNote, stopHarmonyNote, stopAllHarmony, volume, setVolume } = useAudio();
+  const { initAudio, isInitialized, playNote, stopNote, playHarmonyNote, stopHarmonyNote, stopAllHarmony, playHarmonyString, stopHarmonyString, stopAllHarmonyStrings, volume, setVolume } = useAudio();
   const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
     isInitialized ? playNote : null,
     isInitialized ? stopNote : null
@@ -35,6 +38,29 @@ const HarmonyPage = () => {
       setHarmony(null);
     }
   }, [selectedChord]);
+
+  // Handle chord changes while Strings is active
+  useEffect(() => {
+    if (isStringsActive && harmony && isInitialized && setupMode === 'strings') {
+      // Stop currently sustaining harmony strings
+      stopAllHarmonyStrings();
+      sustainedStringNotesRef.current.clear();
+
+      // Start new harmony strings for the updated chord
+      const harmonyMidi = harmonyToMidi(harmony);
+      [
+        harmonyMidi.soprano,
+        harmonyMidi.alto,
+        harmonyMidi.tenor,
+        harmonyMidi.bass
+      ].forEach(midi => {
+        if (midi !== null) {
+          playHarmonyString(midi);
+          sustainedStringNotesRef.current.add(midi);
+        }
+      });
+    }
+  }, [harmony, isStringsActive, setupMode, isInitialized, playHarmonyString, stopAllHarmonyStrings]);
 
   // Convert harmony notes to MIDI values for piano highlighting
   const highlightedNotes = useMemo(() => {
@@ -86,6 +112,38 @@ const HarmonyPage = () => {
     setIsPlaying(false);
   };
 
+  const handleStartStrings = () => {
+    if (!isInitialized) return;
+    if (!harmony) return;
+
+    // Play all four SATB voices as sustained strings
+    const harmonyMidi = harmonyToMidi(harmony);
+    sustainedStringNotesRef.current.clear();
+    
+    [
+      harmonyMidi.soprano,
+      harmonyMidi.alto,
+      harmonyMidi.tenor,
+      harmonyMidi.bass
+    ].forEach(midi => {
+      if (midi !== null) {
+        playHarmonyString(midi);
+        sustainedStringNotesRef.current.add(midi);
+      }
+    });
+
+    setIsStringsActive(true);
+  };
+
+  const handleStopStrings = () => {
+    if (!isInitialized) return;
+
+    // Stop all sustained harmony string notes
+    stopAllHarmonyStrings();
+    sustainedStringNotesRef.current.clear();
+    setIsStringsActive(false);
+  };
+
   // Play single voice for audition
   const handlePlayVoice = (voiceName) => {
     if (!isInitialized || !harmony) return;
@@ -108,6 +166,9 @@ const HarmonyPage = () => {
       if (isPlaying) {
         handleStopHarmony();
       }
+      if (isStringsActive) {
+        handleStopStrings();
+      }
     };
   }, []);
 
@@ -117,6 +178,32 @@ const HarmonyPage = () => {
         title={<span className="flex items-center justify-center gap-2"><span className="material-symbols-outlined text-4xl">library_music</span> Harmony Studio</span>} 
         description="Explore four-part SATB harmony and voice leading concepts."
       />
+
+      {/* Setup Switcher */}
+      <div className="w-full flex justify-center mb-2">
+        <div className="bg-space-surface/60 p-1 rounded-xl border border-white/5 flex gap-1">
+          <button
+            onClick={() => { setSetupMode('harmony'); setIsStringsActive(false); }}
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              setupMode === 'harmony' 
+                ? 'bg-cosmic-purple text-white shadow-lg' 
+                : 'text-moon-gray hover:text-white hover:bg-white/5'
+            }`}
+          >
+            Harmony
+          </button>
+          <button
+            onClick={() => { setSetupMode('strings'); setIsStringsActive(false); }}
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              setupMode === 'strings' 
+                ? 'bg-cosmic-blue text-white shadow-lg' 
+                : 'text-moon-gray hover:text-white hover:bg-white/5'
+            }`}
+          >
+            Strings
+          </button>
+        </div>
+      </div>
 
       {/* Main layout grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -136,8 +223,10 @@ const HarmonyPage = () => {
           {/* Harmony Info */}
           <HarmonyInfo chord={selectedChord} harmony={harmony} />
 
-          {/* Tone Selector */}
-          <ToneSelector selectedTone={selectedTone} onSelectTone={setSelectedTone} />
+          {/* Tone Selector - only for Harmony mode */}
+          {setupMode === 'harmony' && (
+            <ToneSelector selectedTone={selectedTone} onSelectTone={setSelectedTone} />
+          )}
 
           {/* Voice Panels - 4 voices */}
           <div>
@@ -149,29 +238,71 @@ const HarmonyPage = () => {
               <VoicePanel 
                 voiceName="Soprano" 
                 noteName={harmony?.soprano} 
-                isHighlighted={isPlaying}
+                isHighlighted={isPlaying || (setupMode === 'strings' && isStringsActive)}
                 onPlayVoice={() => handlePlayVoice('soprano')}
               />
               <VoicePanel 
                 voiceName="Alto" 
                 noteName={harmony?.alto}
-                isHighlighted={isPlaying}
+                isHighlighted={isPlaying || (setupMode === 'strings' && isStringsActive)}
                 onPlayVoice={() => handlePlayVoice('alto')}
               />
               <VoicePanel 
                 voiceName="Tenor" 
                 noteName={harmony?.tenor}
-                isHighlighted={isPlaying}
+                isHighlighted={isPlaying || (setupMode === 'strings' && isStringsActive)}
                 onPlayVoice={() => handlePlayVoice('tenor')}
               />
               <VoicePanel 
                 voiceName="Bass" 
                 noteName={harmony?.bass}
-                isHighlighted={isPlaying}
+                isHighlighted={isPlaying || (setupMode === 'strings' && isStringsActive)}
                 onPlayVoice={() => handlePlayVoice('bass')}
               />
             </div>
           </div>
+
+          {/* Strings Controls - only for Strings mode */}
+          {setupMode === 'strings' && (
+            <Panel className="p-6 border-cosmic-blue/30">
+              <div className="space-y-4">
+                <h3 className="text-star-white text-sm font-semibold uppercase tracking-wide flex items-center gap-2">
+                  <span className="material-symbols-outlined text-lg">music_note</span>
+                  Sustained String Harmony
+                </h3>
+                
+                {isStringsActive && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-cosmic-blue/10 border border-cosmic-blue/30">
+                    <div className="w-2 h-2 rounded-full bg-cosmic-blue animate-pulse"></div>
+                    <p className="text-star-white text-sm">SATB harmony sustaining with strings...</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button 
+                    variant={!selectedChord ? "secondary" : "primary"}
+                    onClick={handleStartStrings}
+                    disabled={!selectedChord || !isInitialized || isStringsActive}
+                    className="flex-1"
+                  >
+                    <span className="material-symbols-outlined">play_arrow</span>
+                    Start Strings
+                  </Button>
+
+                  {isStringsActive && (
+                    <Button 
+                      variant="secondary"
+                      onClick={handleStopStrings}
+                      className="flex-1"
+                    >
+                      <span className="material-symbols-outlined">stop</span>
+                      Stop Strings
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Panel>
+          )}
         </div>
       </div>
 
@@ -204,25 +335,29 @@ const HarmonyPage = () => {
           </Button>
         )}
         
-        <Button 
-          variant={!selectedChord ? "secondary" : "primary"}
-          onClick={handlePlayHarmony}
-          disabled={!selectedChord || !isInitialized}
-          className="flex-1 sm:flex-initial"
-        >
-          <span className="material-symbols-outlined">play_arrow</span>
-          Play Harmony
-        </Button>
+        {setupMode === 'harmony' && (
+          <>
+            <Button 
+              variant={!selectedChord ? "secondary" : "primary"}
+              onClick={handlePlayHarmony}
+              disabled={!selectedChord || !isInitialized}
+              className="flex-1 sm:flex-initial"
+            >
+              <span className="material-symbols-outlined">play_arrow</span>
+              Play Harmony
+            </Button>
 
-        {isPlaying && (
-          <Button 
-            variant="secondary"
-            onClick={handleStopHarmony}
-            className="flex-1 sm:flex-initial"
-          >
-            <span className="material-symbols-outlined">stop</span>
-            Stop
-          </Button>
+            {isPlaying && (
+              <Button 
+                variant="secondary"
+                onClick={handleStopHarmony}
+                className="flex-1 sm:flex-initial"
+              >
+                <span className="material-symbols-outlined">stop</span>
+                Stop
+              </Button>
+            )}
+          </>
         )}
       </div>
 
