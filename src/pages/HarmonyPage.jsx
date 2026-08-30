@@ -6,6 +6,7 @@ import Piano from '../components/piano/Piano';
 import VoicePanel from '../components/harmony/VoicePanel';
 import HarmonyInfo from '../components/harmony/HarmonyInfo';
 import HarmonyChordSelector from '../components/harmony/HarmonyChordSelector';
+import ToneSelector from '../components/harmony/ToneSelector';
 import { commonChords } from '../data/chords';
 import { pianoNotes } from '../data/notes';
 import { generateHarmonyForChord, harmonyToMidi } from '../data/harmony';
@@ -16,9 +17,10 @@ const HarmonyPage = () => {
   const [selectedChord, setSelectedChord] = useState(null);
   const [harmony, setHarmony] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedTone, setSelectedTone] = useState('piano');
   const harmonyNotesRef = React.useRef(new Set());
   
-  const { initAudio, isInitialized, playNote, stopNote, volume, setVolume } = useAudio();
+  const { initAudio, isInitialized, playNote, stopNote, playHarmonyNote, stopHarmonyNote, stopAllHarmony, volume, setVolume } = useAudio();
   const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
     isInitialized ? playNote : null,
     isInitialized ? stopNote : null
@@ -56,7 +58,7 @@ const HarmonyPage = () => {
     if (!isInitialized) return;
     if (!harmony) return;
 
-    // Play all four voices
+    // Play all four voices with selected tone
     const harmonyMidi = harmonyToMidi(harmony);
     harmonyNotesRef.current.clear();
     
@@ -67,7 +69,7 @@ const HarmonyPage = () => {
       harmonyMidi.bass
     ].forEach(midi => {
       if (midi !== null) {
-        playNote(midi);
+        playHarmonyNote(midi, selectedTone);
         harmonyNotesRef.current.add(midi);
       }
     });
@@ -84,9 +86,7 @@ const HarmonyPage = () => {
     if (!isInitialized) return;
 
     // Stop all harmony notes
-    harmonyNotesRef.current.forEach(midi => {
-      stopNote(midi);
-    });
+    stopAllHarmony();
     harmonyNotesRef.current.clear();
     setIsPlaying(false);
   };
@@ -101,9 +101,9 @@ const HarmonyPage = () => {
     const noteObj = pianoNotes.find(n => n.name.toLowerCase() === note.toLowerCase());
     if (!noteObj) return;
 
-    playNote(noteObj.midi);
+    playHarmonyNote(noteObj.midi, selectedTone);
     setTimeout(() => {
-      stopNote(noteObj.midi);
+      stopHarmonyNote(noteObj.midi, selectedTone);
     }, 800);
   };
 
@@ -140,6 +140,9 @@ const HarmonyPage = () => {
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Harmony Info */}
           <HarmonyInfo chord={selectedChord} harmony={harmony} />
+
+          {/* Tone Selector */}
+          <ToneSelector selectedTone={selectedTone} onSelectTone={setSelectedTone} />
 
           {/* Voice Panels - 4 voices */}
           <div>

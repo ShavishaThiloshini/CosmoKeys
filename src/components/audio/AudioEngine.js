@@ -9,6 +9,8 @@ class AudioEngine {
   constructor() {
     this.sampler = null;
     this.acmpSynth = null;
+    this.harmonyStringSynth = null;
+    this.harmonyChoirSynth = null;
     this.isLoaded = false;
     this.globalVolume = 0.5;
   }
@@ -80,6 +82,36 @@ class AudioEngine {
     // Set acmpSynth volume lower so it sits in the background
     this.acmpSynth.volume.value = initialDb - 8;
     
+    // Setup Harmony String Synth (Smooth, sustained strings)
+    this.harmonyStringSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: "triangle" // Smooth string-like sound
+      },
+      envelope: {
+        attack: 0.8,
+        decay: 0.1,
+        sustain: 0.8,
+        release: 1.5
+      }
+    }).toDestination();
+    
+    this.harmonyStringSynth.volume.value = initialDb - 3;
+    
+    // Setup Harmony Choir Synth (Warm choir/pad sound)
+    this.harmonyChoirSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: "triangle8" // Warm pad sound
+      },
+      envelope: {
+        attack: 1.2,
+        decay: 0.2,
+        sustain: 0.9,
+        release: 2.0
+      }
+    }).toDestination();
+    
+    this.harmonyChoirSynth.volume.value = initialDb - 5;
+    
     // Ensure context is resumed
     if (Tone.context.state !== 'running') {
       Tone.start();
@@ -97,6 +129,12 @@ class AudioEngine {
       this.sampler.volume.rampTo(db, 0.1);
       if (this.acmpSynth) {
         this.acmpSynth.volume.rampTo(db - 8, 0.1);
+      }
+      if (this.harmonyStringSynth) {
+        this.harmonyStringSynth.volume.rampTo(db - 3, 0.1);
+      }
+      if (this.harmonyChoirSynth) {
+        this.harmonyChoirSynth.volume.rampTo(db - 5, 0.1);
       }
     }
   }
@@ -149,6 +187,65 @@ class AudioEngine {
   stopAllAcmp() {
     if (!this.acmpSynth) return;
     this.acmpSynth.releaseAll();
+  }
+
+  // ─── Harmony Playback (with tone selection) ────────────────────────────────
+
+  /**
+   * Play a harmony note with a selected tone.
+   * tone: 'piano' | 'strings' | 'choir'
+   */
+  playHarmonyNote(midi, tone = 'piano') {
+    if (Tone.context.state !== 'running') {
+      Tone.start();
+    }
+
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+
+    if (tone === 'piano') {
+      if (!this.sampler || !this.isLoaded) return;
+      this.sampler.triggerAttack(noteName);
+    } else if (tone === 'strings') {
+      if (!this.harmonyStringSynth) return;
+      this.harmonyStringSynth.triggerAttack(noteName);
+    } else if (tone === 'choir') {
+      if (!this.harmonyChoirSynth) return;
+      this.harmonyChoirSynth.triggerAttack(noteName);
+    }
+  }
+
+  /**
+   * Stop a harmony note with a selected tone.
+   * tone: 'piano' | 'strings' | 'choir'
+   */
+  stopHarmonyNote(midi, tone = 'piano') {
+    const noteName = Tone.Frequency(midi, "midi").toNote();
+
+    if (tone === 'piano') {
+      if (!this.sampler || !this.isLoaded) return;
+      this.sampler.triggerRelease(noteName);
+    } else if (tone === 'strings') {
+      if (!this.harmonyStringSynth) return;
+      this.harmonyStringSynth.triggerRelease(noteName);
+    } else if (tone === 'choir') {
+      if (!this.harmonyChoirSynth) return;
+      this.harmonyChoirSynth.triggerRelease(noteName);
+    }
+  }
+
+  /**
+   * Stop all active harmony notes for all tones.
+   * Prevents audio orphaning similar to stopAllAcmp().
+   */
+  stopAllHarmony() {
+    if (this.harmonyStringSynth) {
+      this.harmonyStringSynth.releaseAll();
+    }
+    if (this.harmonyChoirSynth) {
+      this.harmonyChoirSynth.releaseAll();
+    }
+    // Note: piano sampler doesn't have releaseAll, so we don't call it
+    // Individual notes will release naturally through triggerRelease
   }
 }
 

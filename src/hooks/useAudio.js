@@ -47,6 +47,24 @@ export const useAudio = () => {
     }
   }, [isInitialized]);
 
+  const playHarmonyNote = useCallback((midi, tone = 'piano') => {
+    if (isInitialized) {
+      engine.playHarmonyNote(midi, tone);
+    }
+  }, [isInitialized]);
+
+  const stopHarmonyNote = useCallback((midi, tone = 'piano') => {
+    if (isInitialized) {
+      engine.stopHarmonyNote(midi, tone);
+    }
+  }, [isInitialized]);
+
+  const stopAllHarmony = useCallback(() => {
+    if (isInitialized) {
+      engine.stopAllHarmony();
+    }
+  }, [isInitialized]);
+
   return {
     initAudio,
     isInitialized,
@@ -55,6 +73,9 @@ export const useAudio = () => {
     playAcmp,
     stopAcmp,
     stopAllAcmp,
+    playHarmonyNote,
+    stopHarmonyNote,
+    stopAllHarmony,
     volume,
     setVolume
   };
