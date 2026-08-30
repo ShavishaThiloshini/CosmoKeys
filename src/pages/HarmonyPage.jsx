@@ -75,11 +75,6 @@ const HarmonyPage = () => {
     });
 
     setIsPlaying(true);
-
-    // Stop after 2 seconds (gives time for the chord to sustain)
-    setTimeout(() => {
-      handleStopHarmony();
-    }, 2000);
   };
 
   const handleStopHarmony = () => {
