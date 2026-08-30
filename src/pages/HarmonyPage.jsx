@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import PageHeader from '../components/common/PageHeader';
 import Panel from '../components/common/Panel';
 import Button from '../components/common/Button';
-import Piano from '../components/piano/Piano';
 import VoicePanel from '../components/harmony/VoicePanel';
 import HarmonyInfo from '../components/harmony/HarmonyInfo';
 import HarmonyChordSelector from '../components/harmony/HarmonyChordSelector';
@@ -10,7 +9,6 @@ import { commonChords } from '../data/chords';
 import { pianoNotes } from '../data/notes';
 import { generateHarmonyForChord, harmonyToMidi } from '../data/harmony';
 import { useAudio } from '../hooks/useAudio';
-import { usePiano } from '../hooks/usePiano';
 
 const HarmonyPage = () => {
   const [selectedChord, setSelectedChord] = useState(null);
@@ -19,10 +17,6 @@ const HarmonyPage = () => {
   const sustainedStringNotesRef = React.useRef(new Set());
   
   const { initAudio, isInitialized, playNote, stopNote, playHarmonyNote, stopHarmonyNote, playHarmonyString, stopHarmonyString, stopAllHarmonyStrings, volume, setVolume } = useAudio();
-  const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
-    isInitialized ? playNote : null,
-    isInitialized ? stopNote : null
-  );
 
   // When chord is selected, generate harmony
   useEffect(() => {
@@ -56,20 +50,6 @@ const HarmonyPage = () => {
       });
     }
   }, [harmony, isStringsActive, isInitialized, playHarmonyString, stopAllHarmonyStrings]);
-
-  // Convert harmony notes to MIDI values for piano highlighting
-  const highlightedNotes = useMemo(() => {
-    const midiSet = new Set();
-    if (harmony) {
-      [harmony.soprano, harmony.alto, harmony.tenor, harmony.bass].forEach(noteName => {
-        const note = pianoNotes.find(n => n.name.toLowerCase() === noteName.toLowerCase());
-        if (note) {
-          midiSet.add(note.midi);
-        }
-      });
-    }
-    return midiSet;
-  }, [harmony]);
 
   const handleStartAudio = () => {
     initAudio();
@@ -237,21 +217,7 @@ const HarmonyPage = () => {
         </div>
       </div>
 
-      {/* Piano Visualization */}
-      <div className="w-full">
-        <h3 className="text-star-white text-sm font-semibold uppercase tracking-wide mb-4 flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg">piano</span>
-          Voice Visualization
-        </h3>
-        <Panel className="p-8 flex justify-center overflow-x-auto">
-          <Piano
-            activeNotes={activeNotes}
-            highlightedNotes={highlightedNotes}
-            onNoteOn={handleNoteOn}
-            onNoteOff={handleNoteOff}
-          />
-        </Panel>
-      </div>
+
 
       {/* Controls */}
       <div className="w-full flex flex-col sm:flex-row gap-4 justify-center">

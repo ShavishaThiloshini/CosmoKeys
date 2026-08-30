@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import PageHeader from '../components/common/PageHeader';
 import Panel from '../components/common/Panel';
 import Button from '../components/common/Button';
-import Piano from '../components/piano/Piano';
 import ChordSelector from '../components/chords/ChordSelector';
 import ChordInfo from '../components/chords/ChordInfo';
 import AcmpInfo from '../components/chords/AcmpInfo';
@@ -10,7 +9,6 @@ import { commonChords } from '../data/chords';
 import { accompanimentPatterns } from '../data/accompaniment';
 import { pianoNotes } from '../data/notes';
 import { useAudio } from '../hooks/useAudio';
-import { usePiano } from '../hooks/usePiano';
 
 const ChordsPage = () => {
   const [selectedChord, setSelectedChord] = useState(null);
@@ -21,11 +19,6 @@ const ChordsPage = () => {
   const acmpNotesRef = React.useRef(new Set());
   
   const { initAudio, isInitialized, playNote, stopNote, playAcmp, stopAllAcmp, volume, setVolume } = useAudio();
-  
-  const { activeNotes, handleNoteOn, handleNoteOff } = usePiano(
-    isInitialized ? playNote : null,
-    isInitialized ? stopNote : null
-  );
 
   // Convert note names (e.g. "C4") to MIDI values for highlighting
   const highlightedNotes = useMemo(() => {
@@ -217,57 +210,6 @@ const ChordsPage = () => {
             )}
           </div>
         </div>
-      </div>
-          
-      {/* Piano View */}
-      <div className="w-full max-w-5xl mt-2">
-        <Panel className="flex flex-col items-center gap-6 p-6 lg:p-8">
-          
-          {/* Controls header */}
-          <div className="flex items-center justify-end w-full">
-            {/* Volume control */}
-            <div className="flex items-center gap-3">
-              <span className="text-moon-gray text-xl select-none flex items-center">
-                {volume === 0 ? <span className="material-symbols-outlined">volume_off</span> : volume < 0.4 ? <span className="material-symbols-outlined">volume_down</span> : <span className="material-symbols-outlined">volume_up</span>}
-              </span>
-              <input
-                id="volume-slider"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={(e) => setVolume(parseFloat(e.target.value))}
-                aria-label="Master volume"
-                className="w-28 h-1.5 accent-cosmic-purple cursor-pointer rounded-full appearance-none
-                           bg-white/10 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                           [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:appearance-none
-                           [&::-webkit-slider-thumb]:bg-nebula-violet [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(168,85,247,0.7)]"
-              />
-              <span className="text-moon-gray/60 text-xs w-8 tabular-nums">
-                {Math.round(volume * 100)}%
-              </span>
-            </div>
-          </div>
-
-          <div className="w-full overflow-x-auto pb-2 -mx-2 px-2">
-            <div className="flex justify-center" style={{ minWidth: 'max-content' }}>
-              <Piano 
-                activeNotes={activeNotes} 
-                highlightedNotes={highlightedNotes} 
-                onNoteOn={handleNoteOn} 
-                onNoteOff={handleNoteOff} 
-              />
-            </div>
-          </div>
-          
-          {/* Octave labels */}
-          <div className="flex gap-2 text-xs text-moon-gray/50 select-none">
-            <span>◀ Octave 3</span>
-            <span>│</span>
-            <span>Octave 4 ▶</span>
-          </div>
-        </Panel>
       </div>
     </div>
   );
