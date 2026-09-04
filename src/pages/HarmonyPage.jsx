@@ -105,14 +105,15 @@ const HarmonyPage = () => {
     }, 800);
   };
 
-  // Cleanup on unmount
+  // Cleanup on unmount — always call stopAllHarmonyStrings when navigating
+  // away so that sustained harmony strings do not continue playing in the
+  // background. The empty-deps version had a stale closure that always saw
+  // isStringsActive as false and therefore never cleaned up.
   useEffect(() => {
     return () => {
-      if (isStringsActive) {
-        handleStopStrings();
-      }
+      stopAllHarmonyStrings();
     };
-  }, []);
+  }, [stopAllHarmonyStrings]);
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
